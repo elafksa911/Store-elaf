@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>اقتراح وصفات من محتوى المطبخ — نسخة مبسطة</title>
+<style>
+  :root{
+    --bg:#f7f7fb;
+    --card:#ffffff;
+    --accent:#2b6cb0;
+    --muted:#6b7280;
+    --danger:#e53e3e;
+  }
+  html,body{height:100%;margin:0;font-family:Inter, "Noto Sans Arabic", "Segoe UI", Tahoma, sans-serif;background:var(--bg);color:#111;}
+  .container{max-width:980px;margin:28px auto;padding:20px;}
+  header{display:flex;align-items:center;gap:16px;margin-bottom:18px;}
+  h1{margin:0;font-size:20px;}
+  p.lead{margin:0;color:var(--muted);font-size:14px}
+  .grid{display:grid;grid-template-columns:1fr 360px;gap:18px;}
+  .card{background:var(--card);border-radius:12px;padding:14px;box-shadow:0 6px 18px rgba(17,24,39,0.06);}
+  .section-title{font-weight:600;margin-bottom:8px}
+  /* inventory list */
+  .inventory-list{display:flex;flex-direction:column;gap:8px;max-height:320px;overflow:auto;padding-right:4px}
+  .inv-item{display:flex;align-items:center;justify-content:space-between;padding:8px;border-radius:8px;background:#fbfdff;border:1px solid #eef2ff}
+  .inv-item small{color:var(--muted)}
+  .controls{display:flex;gap:8px;align-items:center;margin-top:10px}
+  button.btn{background:var(--accent);color:#fff;padding:8px 12px;border:none;border-radius:8px;cursor:pointer}
+  button.ghost{background:transparent;border:1px solid #e2e8f0;color:var(--muted)}
+  input,select{padding:8px;border-radius:8px;border:1px solid #e6eef8;min-width:0}
+  .form-row{display:flex;gap:8px;align-items:center}
+  .small{font-size:13px;color:var(--muted)}
+  /* suggestions */
+  .recipe-card{border-radius:10px;padding:12px;border:1px solid #eef2ff;margin-bottom:10px;background:linear-gradient(90deg,#fff,#fbfdff)}
+  .score{font-weight:700;color:var(--accent)}
+  .badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;background:#eef8ff;color:var(--accent);margin-left:8px}
+  .danger{color:var(--danger);font-weight:600}
+  .missing{color:#b45309}
+  footer{margin-top:18px;color:var(--muted);font-size:13px;text-align:center}
+  /* responsive */
+  @media (max-width:880px){
+    .grid{grid-template-columns:1fr; padding-bottom:36px}
+    .container{padding:12px}
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1>تطبيق اقتراح الوجبات — من محتويات مطبخي</h1>
+        <p class="lead">نسخة مبسطة تعمل محليًا. أضف مكوناتك ثم اضغط «اقترح وصفات».</p>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- العمود الكبير: أدوات المخزون والنتائج -->
+      <div>
+        <div class="card">
+          <div class="section-title">المخزون الحالي</div>
+          <div class="inventory-list" id="inventoryList"></div>
+
+          <div style="margin-top:12px" class="section-title">أضف مكوّناً جديداً</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <input id="inName" placeholder="اسم المكون (مثال: طماطم)" />
+            <input id="inQty" placeholder="الكمية (رقم)" style="width:110px" />
+            <select id="inUnit" style="width:110px">
+              <option value="pcs">pcs</option>
+              <option value="g">g</option>
+              <option value="kg">kg</option>
+              <option value="ml">ml</option>
+              <option value="l">l</option>
+              <option value="cup">cup</option>
+              <option value="tbsp">tbsp</option>
+              <option value="tsp">tsp</option>
+              <option value="clove">clove</option>
+            </select>
+            <input id="inExpiry" type="date" style="width:170px" />
+            <button class="btn" id="btnAdd">أضف</button>
+          </div>
+
+          <div class="controls" style="margin-top:12px">
+            <button class="btn" id="btnSuggest">اقترح وصفات</button>
+            <button class="ghost" id="btnReset">استعادة مثال</button>
+            <div style="margin-left:auto" class="small">عدد المكونات: <span id="countInv">0</span></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:14px">
+          <div class="section-title">النتائج المقترحة</div>
+          <div id="suggestions"></div>
+        </div>
+      </div>
+
+      <!-- العمود الجانبي: وصفات افتراضية وسرعة -->
+      <aside>
+        <div class="card">
+          <div class="section-title">الوصفات الافتراضية (قابلة للتعديل)</div>
+          <div id="recipesList" style="display:flex;flex-direction:column;gap:8px;max-height:360px;overflow:auto;padding-right:4px"></div>
+          <div style="margin-top:10px" class="small">يمكنك تعديل الوصفات داخل السكربت أو إضافتها عبر الواجهة (مستقبلاً).</div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <div class="section-title">مفاهيم سريعة</div>
+          <ul style="margin:8px 0 0 0;padding-left:16px;color:var(--muted);font-size:13px">
+            <li>التطابق التقريبي للنصوص يستخدم معامل تشابه بسيط.</li>
+            <li>يُعطى أولوية للوصفات التي تستخدم مكونات قريبة الانتهاء.</li>
+            <li>الدرجات بين 0 و 1 — أعلى أفضل.</li>
+          </ul>
+        </div>
+      </aside>
+    </div>
+
+    <footer>نسخة تجريبية — نموذج تعليمي مبسّط</footer>
+  </div>
+
+<script>
+/*
+  تطبيق عملى مبسّط لخوارزمية اقتراح الوصفات.
+  - يحوّل التعريفات من نموذج Python السابق إلى JavaScript.
+  - يشمل تحويل وحدات أساسية، بحث fuzzy بسيط عبر bigram Dice coefficient،
+    ونظام نقاط يعتمد على نسبة المكونات المتاحة وبونص قرب الانتهاء.
+*/
+
+// ---------- بيانات افتراضية (يمكن تعديلها) ----------
+let today = new Date("2025-11-20"); // ضبط اليوم كمثال
+// قائمة المخزون (ستُعرض ويمكن إضافة عناصر جديدة)
+let inventory = [];
+
+// الوصفات (نماذج)
+let recipes = [
+  {
+    id: 'r1',
+    title: 'حمص بالثوم وزيت الزيتون',
+    requirements: [
+      { name: 'chickpeas', qty: 200, unit: 'g', essential: true },
+      { name: 'olive oil', qty: 30, unit: 'ml', essential: true },
+      { name: 'garlic', qty: 2, unit: 'pcs', essential: false },
+      { name: 'lemon', qty: 1, unit: 'pcs', essential: false },
+    ],
+    cook_time_min: 15,
+    tags: ['vegetarian']
+  },
+  {
+    id: 'r2',
+    title: 'سلطة السبانخ والطماطم',
+    requirements: [
+      { name: 'spinach', qty: 150, unit: 'g', essential: true },
+      { name: 'tomato', qty: 2, unit: 'pcs', essential: true },
+      { name: 'olive oil', qty: 10, unit: 'ml', essential: false },
+    ],
+    cook_time_min: 10,
+    tags: ['vegan','quick']
+  },
+  {
+    id: 'r3',
+    title: 'يخنة البصل والطماطم',
+    requirements: [
+      { name: 'onion', qty: 3, unit: 'pcs', essential: true },
+      { name: 'tomato', qty: 4, unit: 'pcs', essential: true },
+      { name: 'olive oil', qty: 20, unit: 'ml', essential: true },
+    ],
+    cook_time_min: 45,
+    tags: []
+  }
+];
+
+// قاموس استبدالات مبسّط
+const SUBSTITUTIONS = {
+  'zucchini': ['courgette'],
+  'bell pepper': ['capsicum'],
+  'chickpeas': ['garbanzo beans', 'حمص'],
+  'olive oil': ['vegetable oil', 'زيت زيتون'],
+  // أضف ما يلزم هنا
+};
+
+// تحويل وحدات أساسية (بسيط)
+const UNIT_TO_BASE = {
+  'g': ['g', 1],
+  'kg': ['g', 1000],
+  'ml': ['ml', 1],
+  'l': ['ml', 1000],
+  'cup': ['ml', 240],
+  'tbsp': ['ml', 15],
+  'tsp': ['ml', 5],
+  'pcs': ['pcs', 1],
+  'piece': ['pcs', 1],
+  'clove': ['pcs', 1], // تعامل تقريبي
+};
+
+// ---------- دوال مساعدة ----------
+function toBase(qty, unit) {
+  unit = (unit || '').toLowerCase();
+  if (UNIT_TO_BASE[unit]) {
+    const [base, factor] = UNIT_TO_BASE[unit];
+    return { qty: qty * factor, unit: base };
+  }
+  return { qty, unit };
+}
+
+// معامل تشابه بسيط باستخدام bigram Dice coefficient
+function bigrams(s) {
+  s = s.toLowerCase().trim();
+  const arr = [];
+  for (let i=0;i<s.length-1;i++){
+    arr.push(s.slice(i,i+2));
+  }
+  return arr;
+}
+function diceCoefficient(a, b) {
+  if (!a || !b) return 0;
+  const A = bigrams(a);
+  const B = bigrams(b);
+  if (A.length === 0 || B.length === 0) return 0;
+  let intersect = 0;
+  const Bcopy = B.slice();
+  A.forEach(x=>{
+    const idx = Bcopy.indexOf(x);
+    if (idx !== -1){ intersect++; Bcopy.splice(idx,1); }
+  });
+  return (2.0 * intersect) / (A.length + B.length);
+}
+
+// بحث تطابق تقريبي في أسماء المخزون
+function fuzzyFind(name, inventoryNames, cutoff=0.55) {
+  name = name.toLowerCase();
+  if (inventoryNames.includes(name)) return name;
+  let best = null, bestScore = 0;
+  for (const n of inventoryNames) {
+    const score = diceCoefficient(name, n);
+    if (score > bestScore) { bestScore = score; best = n; }
+  }
+  return bestScore >= cutoff ? best : null;
+}
+
+// جرب إيجاد بديل من قاموس الاستبدالات
+function findSubstitute(reqName, inventoryNames) {
+  reqName = reqName.toLowerCase();
+  for (const key in SUBSTITUTIONS) {
+    const alts = [key, ...SUBSTITUTIONS[key]];
+    if (alts.includes(reqName)) {
+      for (const alt of alts) {
+        if (inventoryNames.includes(alt)) return alt;
+      }
+    }
+  }
+  // محاولة تطابق نصي بين مفتاح البدائل والـinventory
+  for (const key in SUBSTITUTIONS) {
+    const alts = [key, ...SUBSTITUTIONS[key]];
+    for (const alt of alts) {
+      for (const inv of inventoryNames) {
+        if (diceCoefficient(alt, inv) > 0.6) return inv;
+      }
+    }
+  }
+  return null;
+}
+
+// تحويل اسم إلى صيغة معيارية بسيطة
+function canonicalizeName(n) {
+  return (n || '').toLowerCase().trim();
+}
+
+// ---------- دالة تقييم وصفة ----------
+function scoreRecipe(recipe, inventory, todayRef) {
+  const today = todayRef || new Date();
+  const invMap = {};
+  inventory.forEach(it => invMap[ canonicalizeName(it.name) ] = it);
+  const invNames = Object.keys(invMap);
+
+  let totalWeight = 0, matchedWeight = 0, expiryBonus = 0;
+  const missing = [], partialMatches = [];
+
+  for (const req of recipe.requirements) {
+    const weight = req.essential ? 2.0 : 1.0;
+    totalWeight += weight;
+
+    const reqName = canonicalizeName(req.name);
+    let matchedName = fuzzyFind(reqName, invNames);
+    let matchedIng = matchedName ? invMap[matchedName] : null;
+    let usedSub = false;
+
+    if (!matchedIng) {
+      const sub = findSubstitute(reqName, invNames);
+      if (sub) {
+        matchedName = sub;
+        matchedIng = invMap[sub];
+        usedSub = true;
+      }
+    }
+
+    if (matchedIng) {
+      // تحويل وحدات ومقارنة
+      const reqBase = toBase(req.qty, req.unit);
+      const invBase = toBase(matchedIng.qty, matchedIng.unit);
+
+      if (reqBase.unit === invBase.unit) {
+        if (invBase.qty >= reqBase.qty) {
+          matchedWeight += weight;
+        } else {
+          const fraction = Math.max(0, invBase.qty / (reqBase.qty || 1));
+          matchedWeight += weight * fraction;
+          partialMatches.push({ req: req.name, have: matchedIng.name, fraction });
+        }
+      } else {
+        // وحدات غير متطابقة -> ائتمان جزئي
+        matchedWeight += weight * 0.6;
+        partialMatches.push({ req: req.name, have: matchedIng.name, fraction: 0.6 });
+      }
+
+      // بونص قرب انتهاء الصلاحية (أيام)
+      if (matchedIng.expiry) {
+        const daysLeft = Math.ceil((new Date(matchedIng.expiry) - today) / (1000*60*60*24));
+        if (daysLeft <= 3) expiryBonus += 0.5 * weight;
+        else if (daysLeft <= 7) expiryBonus += 0.2 * weight;
+      }
+    } else {
+      missing.push(req.name);
+    }
+  }
+
+  const baseScore = totalWeight > 0 ? matchedWeight / totalWeight : 0;
+  // عقوبة الوقت: كل 30 دقيقة -> عقوبة صغيرة
+  const timePenalty = Math.min(1.0, recipe.cook_time_min / 120.0);
+  const timePenaltyScore = 0.05 * timePenalty;
+
+  let finalScore = baseScore + 0.1 * expiryBonus - timePenaltyScore;
+  finalScore = Math.max(0, Math.min(1, finalScore));
+
+  return {
+    recipe_id: recipe.id,
+    title: recipe.title,
+    final_score: +finalScore.toFixed(3),
+    base_score: +baseScore.toFixed(3),
+    expiry_bonus: +expiryBonus.toFixed(3),
+    time_penalty: +timePenaltyScore.toFixed(3),
+    missing, partialMatches
+  };
+}
+
+// اقتراح أفضل N وصفات
+function suggestRecipes(recipes, inventory, topN=5, todayRef) {
+  const scored = recipes.map(r => scoreRecipe(r, inventory, todayRef));
+  scored.sort((a,b)=> b.final_score - a.final_score);
+  return scored.slice(0, topN);
+}
+
+// ---------- تهيئة العرض والـ DOM ----------
+const inventoryList = document.getElementById('inventoryList');
+const recipesList = document.getElementById('recipesList');
+const suggestionsDiv = document.getElementById('suggestions');
+const countInv = document.getElementById('countInv');
+
+const inName = document.getElementById('inName');
+const inQty = document.getElementById('inQty');
+const inUnit = document.getElementById('inUnit');
+const inExpiry = document.getElementById('inExpiry');
+
+document.getElementById('btnAdd').addEventListener('click', ()=>{
+  const name = inName.value.trim();
+  const qty = parseFloat(inQty.value) || 0;
+  const unit = inUnit.value || 'pcs';
+  const expiryVal = inExpiry.value ? new Date(inExpiry.value) : null;
+  if (!name || qty <= 0) {
+    alert('أدخل اسم المكوّن وكمية صحيحة.');
+    return;
+  }
+  inventory.push({ name: name, qty: qty, unit: unit, expiry: expiryVal });
+  renderInventory();
+  inName.value=''; inQty.value=''; inExpiry.value='';
+});
+
+document.getElementById('btnReset').addEventListener('click', ()=>{
+  loadExampleInventory();
+  renderInventory();
+});
+
+document.getElementById('btnSuggest').addEventListener('click', ()=>{
+  renderSuggestions();
+});
+
+// تهيئة مثال إفتراضي
+function loadExampleInventory(){
+  inventory = [
+    { name: 'chickpeas', qty: 400, unit: 'g', expiry: addDays(today, 2) },
+    { name: 'olive oil', qty: 200, unit: 'ml', expiry: addDays(today, 180) },
+    { name: 'tomato', qty: 3, unit: 'pcs', expiry: addDays(today, 4) },
+    { name: 'onion', qty: 2, unit: 'pcs', expiry: addDays(today, 7) },
+    { name: 'garlic', qty: 4, unit: 'clove', expiry: addDays(today, 30) },
+    { name: 'spinach', qty: 200, unit: 'g', expiry: addDays(today, 1) }
+  ];
+}
+function addDays(d, days){
+  const x = new Date(d);
+  x.setDate(x.getDate() + days);
+  return x.toISOString().slice(0,10); // format yyyy-mm-dd
+}
+
+// render functions
+function renderInventory(){
+  inventoryList.innerHTML = '';
+  inventory.forEach((it, idx) => {
+    const el = document.createElement('div');
+    el.className = 'inv-item';
+    const left = document.createElement('div');
+    left.innerHTML = `<div style="font-weight:600">${it.name}</div><small>${it.qty} ${it.unit}</small>`;
+    const right = document.createElement('div');
+    const expiryText = it.expiry ? `منتهي الصلاحية: ${new Date(it.expiry).toISOString().slice(0,10)}` : '';
+    right.innerHTML = `<small style="display:block;text-align:left">${expiryText}</small><div style="display:flex;gap:6px;margin-top:6px;direction:ltr"><button title="حذف" class="ghost" onclick="removeInv(${idx})">حذف</button></div>`;
+    el.appendChild(left);
+    el.appendChild(right);
+    inventoryList.appendChild(el);
+  });
+  countInv.textContent = inventory.length;
+}
+
+function removeInv(idx) {
+  inventory.splice(idx,1);
+  renderInventory();
+}
+
+// render recipes list (sidebar)
+function renderRecipes(){
+  recipesList.innerHTML = '';
+  recipes.forEach(r=>{
+    const el = document.createElement('div');
+    el.style.border = '1px solid #eef2ff';
+    el.style.borderRadius = '8px';
+    el.style.padding = '8px';
+    el.innerHTML = `<strong>${r.title}</strong><div class="small" style="margin-top:6px">${r.requirements.map(x=>x.name+' ('+x.qty+ x.unit+ ')').join(' • ')}</div>`;
+    recipesList.appendChild(el);
+  });
+}
+
+function renderSuggestions(){
+  suggestionsDiv.innerHTML = '';
+  const s = suggestRecipes(recipes, inventory, 10, today);
+  if (s.length === 0) {
+    suggestionsDiv.innerHTML = '<div class="small">لا توجد وصفات حالياً.</div>';
+    return;
+  }
+  s.forEach(item=>{
+    const r = getRecipeById(item.recipe_id);
+    const card = document.createElement('div');
+    card.className = 'recipe-card';
+    card.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-weight:700">${r.title}</div>
+          <div class="small" style="margin-top:6px">وقت التحضير: ${r.cook_time_min} دقيقة <span class="badge">${r.tags.join(', ') || ''}</span></div>
+        </div>
+        <div style="text-align:left">
+          <div class="score">${(item.final_score*100).toFixed(0)}%</div>
+          <div class="small">درجة أساسية: ${(item.base_score*100).toFixed(0)}%</div>
+        </div>
+      </div>
+      <div style="margin-top:8px" class="small">
+        ${ item.missing.length ? '<div class="missing">مكونات مفقودة: ' + item.missing.join(', ') + '</div>' : '<div style="color:green">كل المكونات الأساسية متوفرة</div>' }
+        ${ item.partialMatches.length ? '<div style="margin-top:6px">تطابق جزئي/بدائل: ' + item.partialMatches.map(pm=> pm.req + ' → ' + pm.have + ' ('+ Math.round(pm.fraction*100) + '%)').join(', ') + '</div>' : '' }
+      </div>
+    `;
+    suggestionsDiv.appendChild(card);
+  });
+}
+
+function getRecipeById(id) {
+  return recipes.find(r=>r.id === id) || {};
+}
+
+// ---------- تهيئة البدء ----------
+loadExampleInventory();
+renderInventory();
+renderRecipes();
+renderSuggestions();
+
+// end of script
+</script>
+</body>
+</html>
