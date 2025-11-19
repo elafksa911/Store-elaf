@@ -1,0 +1,73 @@
+body {
+    margin: 0;
+    font-family: "Tajawal", sans-serif;
+    background: #f9f5ef;
+    color: #333;
+}
+
+/* الهيدر */
+.hero {
+    height: 70vh;
+    background: url('hero.jpg') center/cover no-repeat;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: white;
+    background-color: #556b2f;
+}
+
+.hero-content h1 {
+    font-size: 3rem;
+    margin: 0;
+}
+
+.btn {
+    display: inline-block;
+    padding: 12px 24px;
+    background: #6b7b3a;
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    margin-top: 15px;
+    font-size: 1.1rem;
+}
+
+/* الأقسام */
+.categories .grid,
+.section .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 15px;
+    padding: 20px;
+}
+
+.card {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    text-align: center;
+    font-size: 1.1rem;
+    text-decoration: none;
+    color: #333;
+    border: 1px solid #ddd;
+}
+
+.card:hover {
+    background: #e3e0d8;
+}
+
+/* الفوتر */
+footer {
+    text-align: center;
+    padding: 20px;
+    background: #6b7b3a;
+    color: white;
+    margin-top: 40px;
+}
+
+/* صفحة المنتج */
+.product-details {
+    padding: 30px;
+    text-align: center;
+}
